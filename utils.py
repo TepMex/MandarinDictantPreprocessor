@@ -12,7 +12,7 @@ def download_youtube_mp4(youtube_id):
 
 def download_youtube_srt(youtube_id):
     subs = YouTubeTranscriptApi.list_transcripts(youtube_id)
-    subs = subs.find_manually_created_transcript(['zh-Hant'])
+    subs = subs.find_manually_created_transcript(['zh','zh-Hant'])
     subs = subs.fetch()
 
     formatter = SRTFormatter()
