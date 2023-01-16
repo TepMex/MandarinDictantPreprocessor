@@ -155,6 +155,8 @@ cython_debug/
 # Ignore content
 *.mp4
 *.srt
+*.mp4.json
+*.dictant
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

@@ -36,6 +36,8 @@ from xpinyin import Pinyin
 import json
 import re
 import sys
+from os import path
+from pathlib import Path
 
 def subtitle_part_to_dict(subtitle, file_name):
     filtered_text = get_only_hanzi_from(subtitle.text)
@@ -71,12 +73,12 @@ def subtitle_part_to_ffmpeg_graph(input_file, output_file, subtitle_item):
     input = ffmpeg.input(input_file)
 
     audio = input.audio.filter('atrim',
-                               start=start_time,
-                               end=end_time)
+        start=start_time,
+        end=end_time).filter('asetpts', 'PTS-STARTPTS')
 
     video = input.video.filter('trim',
-                               start=start_time,
-                               end=end_time)
+        start=start_time,
+        end=end_time).filter('setpts', 'PTS-STARTPTS')
 
     return ffmpeg.output(audio, video, output_file)
 
@@ -95,18 +97,22 @@ def dictant_preprocess(video_file, subtitles_file):
     result_ffmpeg = []
     for sub in subs:
         chunk_file_name = get_chunk_file_name(sub, video_file)
-        json_item = subtitle_part_to_dict(sub, chunk_file_name)
+        output_folder = Path(video_file).stem
+        output_path = path.join(output_folder, chunk_file_name)
+        json_item = subtitle_part_to_dict(sub, output_path)
         result_json.append(json_item)
 
         ffmpeg_graph = subtitle_part_to_ffmpeg_graph(
-            video_file, chunk_file_name, sub
+            video_file, output_path, sub
         )
-        # print(ffmpeg_graph.compile())
         result_ffmpeg.append(ffmpeg_graph)
 
     save_processed_json(video_file, result_json)
-    run_ffmpeg_trims(result_ffmpeg[:5])
+    run_ffmpeg_trims(result_ffmpeg)
 
+def print_ffmpeg_trims(ffmpeg_nodes):
+    for node in ffmpeg_nodes:
+        print(' '.join(node.compile()))
 
 def run_ffmpeg_trims(ffmpeg_nodes):
     logs = []
@@ -131,10 +137,12 @@ def save_processed_json(input_file, json_obj):
     with open(f'{input_file}.json', 'w', encoding='utf-8') as json_file:
         json_file.write(json_str)
 
-def main():
-    print(sys.argv)
-    # dictant_preprocess('Vws4DE7UvtM.mp4', 'Vws4DE7UvtM.srt')
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print('Usage:\n python preprocessor.py video_file srt_file')
+        sys.exit(0)
+    video_file = sys.argv[1]
+    srt_file = sys.argv[2]
 
-# Run test
-#unittest.main(argv=[''], verbosity=2, exit=False)
+    dictant_preprocess(video_file, srt_file)
 
